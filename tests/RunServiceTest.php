@@ -5,6 +5,8 @@ use App\Oo\FakeFlowRunner;
 use App\Portal\RunLog;
 use App\Portal\RunService;
 use PHPUnit\Framework\TestCase;
+use App\Oo\FlowRunner;
+use App\Oo\OoException;
 
 final class RunServiceTest extends TestCase
 {
@@ -55,5 +57,48 @@ final class RunServiceTest extends TestCase
 
         $this->assertSame('RUNNING', $run['status']);
         $this->assertSame('open', $run['inputs']['action']);
+    }
+    public function testNothingIsLoggedWhenOoIsUnreachable(): void
+    {
+        //$runner = $this->createMock(FlowRunner::class);
+        $runner = $this->createStub(FlowRunner::class);
+        $runner->method('startFlow')
+            ->willThrowException(new OoException('Connection refused'));
+
+        $runLog = new RunLog($this->logFile);
+        $service = new RunService($runner, $runLog);
+
+        try {
+            $service->start(
+                flow: ['uuid' => 'firewall-maintenance', 'name' => 'Firewall'],
+                flowId: 'firewall-maintenance',
+                inputs: ['action' => 'open'],
+                requester: 'Brad',
+            );
+            $this->fail('Expected an OoException');
+        } catch (OoException $e) {
+            // expected: OO was unreachable
+        }
+
+        $this->assertSame([], $runLog->recent());
+    }
+
+    public function testStartFlowIsCalledWithTheFlowUuid(): void
+    {
+        $runner = $this->createMock(FlowRunner::class);
+        $runner->expects($this->once())
+            ->method('startFlow')
+            ->with('firewall-maintenance', ['action' => 'open'], $this->anything())
+            ->willReturn('12345');
+
+        $runLog = new RunLog($this->logFile);
+        $service = new RunService($runner, $runLog);
+
+        $service->start(
+            flow: ['uuid' => 'firewall-maintenance', 'name' => 'Firewall'],
+            flowId: 'firewall-maintenance',
+            inputs: ['action' => 'open'],
+            requester: 'Brad',
+        );
     }
 }
