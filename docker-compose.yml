@@ -1,0 +1,37 @@
+services:
+  mock-oo:
+    image: php:8.3-cli
+    init: true
+    working_dir: /mock
+    volumes:
+      - ./mock-oo:/mock
+    command: php -S 0.0.0.0:8080 router.php
+    ports:
+      - "8080:8080"
+
+  portal:
+    image: php:8.3-cli
+    init: true
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      OO_BASE_URL: http://mock-oo:8080/oo/rest/v2
+      TZ: America/New_York
+      PHP_CLI_SERVER_WORKERS: "4"
+    command: php -S 0.0.0.0:8000 -t public
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mock-oo
+
+  app:
+    image: php:8.3-cli
+    init: true
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      OO_BASE_URL: http://mock-oo:8080/oo/rest/v2
+    depends_on:
+      - mock-oo
