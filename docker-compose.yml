@@ -36,3 +36,12 @@ services:
       OO_BASE_URL: http://mock-oo:8080/oo/rest/v2
     depends_on:
       - mock-oo
+  py:
+    build: ./python
+    working_dir: /app
+    volumes:
+      - ./python:/app
+    environment:
+      OO_BASE_URL: http://mock-oo:8080/oo/rest/v2
+    depends_on:
+      - mock-oo

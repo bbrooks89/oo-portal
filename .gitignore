@@ -2,3 +2,5 @@ vendor/
 storage/
 .env
 *:Zone.Identifier
+__pycache__/
+.pytest_cache/
