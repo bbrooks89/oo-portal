@@ -1,12 +1,22 @@
+import os
 import sys
 
 from oo.fake_runner import FakeFlowRunner
-from oo.runner import OoError
+from oo.flow_client import FlowClient
+from oo.runner import FlowRunner, OoError
 
+def build_runner() -> FlowRunner:
+    if os.environ.get("OO_FAKE"):
+        return FakeFlowRunner()
+    return FlowClient(
+        base_url=os.environ.get("OO_BASE_URL", "http://localhost:8080/oo/rest/v2"),
+        username=os.environ.get("OO_USER", "practice"),
+        password=os.environ.get("OO_PASSWORD", "practice"),
+    )
 
 def main() -> int:
     action = sys.argv[1] if len(sys.argv) > 1 else "open"
-    runner = FakeFlowRunner()  # the real REST client comes in the next lesson
+    runner = build_runner()
 
     try:
         execution_id = runner.start_flow(
