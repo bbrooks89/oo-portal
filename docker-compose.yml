@@ -19,6 +19,7 @@ services:
       OO_BASE_URL: http://mock-oo:8080/oo/rest/v2
       TZ: America/New_York
       PHP_CLI_SERVER_WORKERS: "4"
+      RUN_STORE: sqlite
     command: php -S 0.0.0.0:8000 -t public
     ports:
       - "8000:8000"

@@ -9,6 +9,7 @@ use App\Oo\FlowClient;
 use App\Portal\FlowCatalog;
 use App\Portal\RunLog;
 use App\Portal\RunService;
+use App\Portal\SqliteRunStore;
 
 date_default_timezone_set(getenv('TZ') ?: 'America/New_York');
 session_start();
@@ -19,7 +20,15 @@ $client = new FlowClient(
     password: getenv('OO_PASSWORD') ?: 'practice',
 );
 $catalog = FlowCatalog::default();
-$runLog = new RunLog(__DIR__ . '/../storage/runs.json');
+//$runLog = new RunLog(__DIR__ . '/../storage/runs.json');
+$storageDir = __DIR__ . '/../storage';
+if (!is_dir($storageDir)) {
+    mkdir($storageDir, 0775, true);
+}
+
+$runLog = getenv('RUN_STORE') === 'sqlite'
+    ? new SqliteRunStore(new PDO('sqlite:' . $storageDir . '/runs.sqlite'))
+    : new RunLog($storageDir . '/runs.json');
 $runService = new RunService($client, $runLog);
 
 /**
