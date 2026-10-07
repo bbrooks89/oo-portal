@@ -1,6 +1,6 @@
 # OO Portal
 
-A self-service portal for requesting and tracking orchestrated automations, built in object-oriented PHP 8 against a REST API modeled on Micro Focus / OpenText Operations Orchestration (OO) Central.
+A self-service portal for requesting and tracking orchestrated automations, built in object-oriented PHP 8 against a REST API modeled on Micro Focus / OpenText Operations Orchestration (OO) Central, plus a Python command-line client for the same API.
 
 Teams pick an approved automation, enter validated inputs, and start it with one click. The portal starts the flow through the OO REST API, records who requested it and when, and shows live status until the run finishes. In orchestration terms, it's an **invocation channel**: a standardized, traceable way for teams to order automation without logging into OO Central.
 
@@ -15,7 +15,8 @@ Teams pick an approved automation, enter validated inputs, and start it with one
 - **Databases with PDO:** SQLite storage using prepared statements throughout
 - **Unit testing with PHPUnit:** fakes, stubs, and mocks; in-memory databases for isolated tests
 - **Web security basics:** output escaping against XSS, CSRF tokens on forms, server-side input validation, and Post/Redirect/Get
-- **Tooling:** Composer with PSR-4 autoloading, Docker Compose, and Git
+- **Python:** the same runner design in idiomatic Python, with an abstract base class, a frozen dataclass value object, a `requests`-based REST client, and pytest tests using fixtures and parametrization
+- **Tooling:** Composer with PSR-4 autoloading, pip, Dockerfiles, Docker Compose, and Git
 
 ## Architecture
 
@@ -59,6 +60,16 @@ src/Portal/                Portal logic
   SqliteRunStore.php       SQLite implementation using PDO
   StatusView.php           Maps OO statuses to on-screen labels
 tests/                     PHPUnit tests
+python/                    Python command-line client
+  Dockerfile               Python 3.13 image with dependencies installed
+  requirements.txt         requests, pytest
+  run_flow.py              Start a flow and wait for the result
+  oo/
+    runner.py              FlowRunner abstract base class and OoError
+    flow_client.py         Real implementation using requests
+    fake_runner.py         Test double: instant results, "fail" input fails
+    execution.py           Frozen dataclass for one run's status
+  tests/                   pytest tests
 ```
 
 ## Running it
@@ -93,6 +104,18 @@ docker compose run --rm --no-deps -e OO_FAKE=1 app php bin/run-flow.php open
 
 Exit codes: `0` success, `1` the flow finished with an error result, `2` OO could not be reached.
 
+### Python client
+
+The Python client mirrors the PHP one: a `FlowRunner` abstract base class with a real `requests`-based client and a fake, chosen by an environment variable. The shared polling logic lives once in the base class.
+
+```bash
+docker compose build py
+docker compose run --rm py python run_flow.py open
+docker compose run --rm --no-deps -e OO_FAKE=1 py python run_flow.py fail
+```
+
+The exit codes are the same as the PHP client's.
+
 ## Tests
 
 ```bash
@@ -100,6 +123,14 @@ docker compose run --rm --no-deps app vendor/bin/phpunit
 ```
 
 The tests cover input validation, run recording, both storage implementations, and failure handling. They use fakes, stubs, mocks, and in-memory SQLite databases, so they run in well under a second with no external services.
+
+Python tests:
+
+```bash
+docker compose run --rm --no-deps py python -m pytest -v
+```
+
+They cover the value object (including a parametrized table of status combinations), the fake runner through a pytest fixture, and the real client's handling of an unreachable server.
 
 ## Notes for real deployment
 
