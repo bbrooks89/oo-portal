@@ -11,7 +11,7 @@ namespace App\Portal;
  * Stored in a JSON file to keep the practice project simple. A real portal
  * would use a database table.
  */
-final class RunLog
+final class RunLog implements RunStore
 {
     public function __construct(private string $file)
     {

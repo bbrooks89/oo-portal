@@ -9,7 +9,7 @@ final class RunService
 {
     public function __construct(
         private FlowRunner $runner,
-        private RunLog $runLog,
+        private RunStore $runLog,
     ) {
     }
 
