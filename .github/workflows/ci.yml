@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  php:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: curl, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+      - name: Lint
+        run: find app bin mock-oo public src tests -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: PHPUnit
+        run: vendor/bin/phpunit
+      - name: CLI smoke test against the mock OO server
+        run: |
+          php -S 127.0.0.1:8080 -t mock-oo mock-oo/router.php > mock.log 2>&1 &
+          sleep 1
+          php bin/run-flow.php open                      # expect 0
+          if php bin/run-flow.php fail; then exit 1; fi   # expect 1
+          OO_FAKE=1 OO_BASE_URL=http://127.0.0.1:9/none php bin/run-flow.php open   # fake needs no server
+
+  python:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: pytest
+        run: python -m pytest -v

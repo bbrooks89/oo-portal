@@ -9,14 +9,17 @@ use App\Oo\OoException;
 use App\Oo\FakeFlowRunner;
 use App\Oo\AlwaysFailsFlowRunner;
 
-#$client = getenv('OO_FAKE')
-$client = getenv('OO_ALWAYS_FAIL')
-    ? new AlwaysFailsFlowRunner()
-    : new FlowClient(
+// Pick the runner: OO_FAKE=1 and OO_ALWAYS_FAIL=1 use test doubles (no server needed),
+// otherwise talk to OO Central over REST.
+$client = match (true) {
+    (bool) getenv('OO_FAKE') => new FakeFlowRunner(),
+    (bool) getenv('OO_ALWAYS_FAIL') => new AlwaysFailsFlowRunner(),
+    default => new FlowClient(
         baseUrl: getenv('OO_BASE_URL') ?: 'http://localhost:8080/oo/rest/v2',
         username: getenv('OO_USER') ?: 'practice',
         password: getenv('OO_PASSWORD') ?: 'practice',
-    );
+    ),
+};
 
 echo 'Using: ' . get_class($client) . "\n";
 
