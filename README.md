@@ -1,5 +1,7 @@
 # OO Portal
 
+[![ci](https://github.com/bbrooks89/oo-portal/actions/workflows/ci.yml/badge.svg)](https://github.com/bbrooks89/oo-portal/actions/workflows/ci.yml)
+
 A self-service portal for requesting and tracking orchestrated automations, built in object-oriented PHP 8 against a REST API modeled on Micro Focus / OpenText Operations Orchestration (OO) Central, plus a Python command-line client for the same API.
 
 Teams pick an approved automation, enter validated inputs, and start it with one click. The portal starts the flow through the OO REST API, records who requested it and when, and shows live status until the run finishes. In orchestration terms, it's an **invocation channel**: a standardized, traceable way for teams to order automation without logging into OO Central.
@@ -100,6 +102,9 @@ docker compose run --rm app php bin/run-flow.php fail
 
 # Use a test double instead of the REST client (no server needed)
 docker compose run --rm --no-deps -e OO_FAKE=1 app php bin/run-flow.php open
+
+# Or force every run to fail, to exercise the error path
+docker compose run --rm --no-deps -e OO_ALWAYS_FAIL=1 app php bin/run-flow.php open
 ```
 
 Exit codes: `0` success, `1` the flow finished with an error result, `2` OO could not be reached.
@@ -131,6 +136,8 @@ docker compose run --rm --no-deps py python -m pytest -v
 ```
 
 They cover the value object (including a parametrized table of status combinations), the fake runner through a pytest fixture, and the real client's handling of an unreachable server.
+
+GitHub Actions runs both suites on every push, along with a PHP lint and a smoke test of the command-line client against the mock OO server.
 
 ## Notes for real deployment
 
